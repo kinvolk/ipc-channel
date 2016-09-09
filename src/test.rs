@@ -293,7 +293,14 @@ fn shared_memory() {
     let (tx, rx) = ipc::channel().unwrap();
     tx.send(person_and_shared_memory.clone()).unwrap();
     let received_person_and_shared_memory = rx.recv().unwrap();
-    assert_eq!(received_person_and_shared_memory, person_and_shared_memory);
+    // On Windows, we don't have a way to check whether two handles
+    // refer to the same underlying object before Windows 10.  It's questionable
+    // if this test *really* wants that anyway.
+    if cfg!(not(windows)) {
+        assert_eq!(received_person_and_shared_memory, person_and_shared_memory);
+    } else {
+        assert_eq!(received_person_and_shared_memory.0, person_and_shared_memory.0);
+    }
     assert!(person_and_shared_memory.1.iter().all(|byte| *byte == 0xba));
     assert!(received_person_and_shared_memory.1.iter().all(|byte| *byte == 0xba));
 }

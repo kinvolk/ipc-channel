@@ -10,15 +10,15 @@
 use platform::{self, OsIpcChannel, OsIpcReceiverSet};
 use platform::{OsIpcSharedMemory};
 use std::collections::HashMap;
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::thread;
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
 use std::env;
 
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
 use libc;
 use platform::{OsIpcSender, OsIpcOneShotServer};
 #[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
@@ -215,7 +215,8 @@ fn with_n_fds(n: usize, size: usize) {
 
 // These tests only apply to platforms that need fragmentation.
 #[cfg(all(not(feature = "force-inprocess"), any(target_os = "linux",
-                                                target_os = "freebsd")))]
+                                                target_os = "freebsd",
+                                                target_os = "windows")))]
 mod fragment_tests {
     use platform;
     use super::with_n_fds;
@@ -666,7 +667,7 @@ fn server_connect_first() {
 // Note! This test is actually used by the cross_process_spawn() test
 // below as a second process.  Running it by itself is meaningless, but
 // passes.
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
 #[test]
 #[ignore]
 fn cross_process_server()
@@ -682,7 +683,7 @@ fn cross_process_server()
     unsafe { libc::exit(0); }
 }
 
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
 #[test]
 fn cross_process_spawn() {
     let (server, name) = OsIpcOneShotServer::new().unwrap();
@@ -726,7 +727,7 @@ fn cross_process_fork() {
 // Note! This test is actually used by the cross_process_sender_transfer_spawn() test
 // below as a second process.  Running it by itself is meaningless, but
 // passes.
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
 #[test]
 #[ignore]
 fn cross_process_sender_transfer_server()
@@ -746,7 +747,7 @@ fn cross_process_sender_transfer_server()
     unsafe { libc::exit(0); }
 }
 
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
 #[test]
 fn cross_process_sender_transfer_spawn() {
     let (server, name) = OsIpcOneShotServer::new().unwrap();
@@ -972,7 +973,7 @@ mod sync_test {
 // Note! This test is actually used by the
 // cross_process_two_step_transfer_spawn() test below.  Running it by
 // itself is meaningless, but it passes if run this way.
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
 #[test]
 #[ignore]
 fn cross_process_two_step_transfer_server()
@@ -1013,10 +1014,16 @@ fn cross_process_two_step_transfer_server()
     unsafe { libc::exit(0); }
 }
 
-// TODO -- this fails on OSX with a MACH_SEND_INVALID_RIGHT!
-// Needs investigation.
-#[cfg(not(any(feature = "force-inprocess", target_os = "windows", target_os = "android")))]
-#[cfg_attr(target_os = "macos", ignore)]
+// This test panics on Windows, because the other process will panic
+// when it detects that it receives handles that are intended for another
+// process.  It's marked as ignore/known-fail on Windows for this reason.
+//
+// TODO -- this fails on OSX as well with a MACH_SEND_INVALID_RIGHT!
+// Needs investigation.  It may be a similar underlying issue, just done by
+// the kernel instead of explicitly (ports in a message that's already
+// buffered are intended for only one process).
+#[cfg(not(any(feature = "force-inprocess", target_os = "android")))]
+#[cfg_attr(any(target_os = "windows", target_os = "macos"), ignore)]
 #[test]
 fn cross_process_two_step_transfer_spawn() {
     let cookie: &[u8] = b"cookie";
