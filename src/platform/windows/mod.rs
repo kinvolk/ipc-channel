@@ -324,7 +324,7 @@ impl WinHandle {
 }
 
 enum GetMessageResult {
-    NoMessage, 
+    NoMessage,
     Message(Vec<u8>, Vec<OsOpaqueIpcChannel>, Vec<OsIpcSharedMemory>),
 }
 
@@ -943,7 +943,7 @@ impl OsIpcSender {
         // make sure we don't have too much oob data to begin with
         assert!((oob_size as usize) < (PIPE_BUFFER_SIZE-MessageHeader::size()), "too much oob data");
 
-        let bytes_left_for_data = (PIPE_BUFFER_SIZE-MessageHeader::size()) - (oob_size as usize); 
+        let bytes_left_for_data = (PIPE_BUFFER_SIZE-MessageHeader::size()) - (oob_size as usize);
         data_len >= bytes_left_for_data
     }
 
@@ -1097,7 +1097,7 @@ impl OsIpcReceiverSet {
         win32_trace!("[# {:?}] ReceiverSet add {:?}, id {}", *self.iocp, *reader.handle, set_id);
 
         self.readers.push(reader);
-        
+
         Ok(set_id)
     }
 
@@ -1107,7 +1107,7 @@ impl OsIpcReceiverSet {
 
         // the ultimate results
         let mut selection_results = vec![];
-        
+
         // Make a quick first-run check for any closed receivers.
         // This will only happen if we have a receiver that
         // gets added to the Set after it was closed (the
