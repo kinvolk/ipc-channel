@@ -194,9 +194,9 @@ impl serde::Serialize for OutOfBandMessage {
     }
 }
 
-impl serde::Deserialize for OutOfBandMessage {
+impl<'de> serde::Deserialize<'de> for OutOfBandMessage {
     fn deserialize<D>(deserializer: D) -> Result<OutOfBandMessage, D::Error>
-        where D: serde::Deserializer
+        where D: serde::Deserializer<'de>
     {
         let (target_process_id, channel_handles, shmem_handles, big_data_receiver_handle) =
             try!(serde::Deserialize::deserialize(deserializer));
