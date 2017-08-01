@@ -196,10 +196,10 @@ fn newMsghdr(msg_name: *mut c_void,
         msg_namelen: msg_namelen,
         msg_iov: msg_iov,
         msg_iovlen: msg_iovlen,
-        __pad1: 0 as i32,
+        __pad1: 0 as IovLen,
         msg_control: msg_control,
         msg_controllen: msg_controllen,
-        __pad2: 0 as i32,
+        __pad2: 0 as MsgControlLen,
         msg_flags: msg_flags,
     };
 }
@@ -317,15 +317,15 @@ impl OsIpcSender {
                     },
                 ];
 
-                let msghdr = msghdr {
-                    msg_name: ptr::null_mut(),
-                    msg_namelen: 0,
-                    msg_iov: iovec.as_mut_ptr(),
-                    msg_iovlen: iovec.len() as IovLen,
-                    msg_control: cmsg_buffer as *mut c_void,
-                    msg_controllen: cmsg_space as MsgControlLen,
-                    msg_flags: 0,
-                };
+                let msghdr = newMsghdr(
+                    /* msg_name: */ptr::null_mut(),
+                    /* msg_namelen: */0,
+                    /* msg_iov: */iovec.as_mut_ptr(),
+                    /* msg_iovlen: */iovec.len() as IovLen,
+                    /* msg_control: */cmsg_buffer as *mut c_void,
+                    /* msg_controllen: */cmsg_space as MsgControlLen,
+                    /* msg_flags: */0,
+                );
 
                 let result = sendmsg(sender_fd, &msghdr, 0);
                 libc::free(cmsg_buffer as *mut c_void);
@@ -1038,15 +1038,15 @@ impl UnixCmsg {
         let cmsg_buffer = libc::malloc(cmsg_length) as *mut cmsghdr;
         UnixCmsg {
             cmsg_buffer: cmsg_buffer,
-            msghdr: msghdr {
-                msg_name: ptr::null_mut(),
-                msg_namelen: 0,
-                msg_iov: iovec.as_mut_ptr(),
-                msg_iovlen: iovec.len() as IovLen,
-                msg_control: cmsg_buffer as *mut c_void,
-                msg_controllen: cmsg_length as MsgControlLen,
-                msg_flags: 0,
-            },
+            msghdr: newMsghdr (
+                /* msg_name: */ptr::null_mut(),
+                /* msg_namelen: */0,
+                /* msg_iov: */iovec.as_mut_ptr(),
+                /* msg_iovlen: */iovec.len() as IovLen,
+                /* msg_control: */cmsg_buffer as *mut c_void,
+                /* msg_controllen: */cmsg_length as MsgControlLen,
+                /* msg_flags: */0,
+            ),
         }
     }
 
