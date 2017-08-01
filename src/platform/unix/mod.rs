@@ -164,44 +164,22 @@ pub struct OsIpcSender {
     nosync_marker: PhantomData<Cell<()>>,
 }
 
-#[cfg(not(all(target_os = "linux", target_env = "musl")))]
-fn newMsghdr(msg_name: *mut c_void,
-             msg_namelen: socklen_t,
-             msg_iov: *mut iovec,
-             msg_iovlen: IovLen,
-             msg_control: *mut c_void,
-             msg_controllen: MsgControlLen,
-             msg_flags: c_int) -> msghdr {
-    return msghdr {
-        msg_name: msg_name,
-        msg_namelen: msg_namelen,
-        msg_iov: msg_iov,
-        msg_iovlen: msg_iovlen,
-        msg_control: msg_control,
-        msg_controllen: msg_controllen,
-        msg_flags: msg_flags,
-    };
-}
-
-#[cfg(all(target_os = "linux", target_env = "musl"))]
-fn newMsghdr(msg_name: *mut c_void,
-             msg_namelen: socklen_t,
-             msg_iov: *mut iovec,
-             msg_iovlen: IovLen,
-             msg_control: *mut c_void,
-             msg_controllen: MsgControlLen,
-             msg_flags: c_int) -> msghdr {
-    return msghdr {
-        msg_name: msg_name,
-        msg_namelen: msg_namelen,
-        msg_iov: msg_iov,
-        msg_iovlen: msg_iovlen,
-        __pad1: 0 as IovLen,
-        msg_control: msg_control,
-        msg_controllen: msg_controllen,
-        __pad2: 0 as MsgControlLen,
-        msg_flags: msg_flags,
-    };
+fn new_msghdr(msg_name: *mut c_void,
+              msg_namelen: socklen_t,
+              msg_iov: *mut iovec,
+              msg_iovlen: IovLen,
+              msg_control: *mut c_void,
+              msg_controllen: MsgControlLen,
+              msg_flags: c_int) -> msghdr {
+    let mut mh: msghdr = unsafe { mem::zeroed() };
+    mh.msg_name = msg_name;
+    mh.msg_namelen = msg_namelen;
+    mh.msg_iov = msg_iov;
+    mh.msg_iovlen = msg_iovlen;
+    mh.msg_control = msg_control;
+    mh.msg_controllen = msg_controllen;
+    mh.msg_flags = msg_flags;
+    return mh;
 }
 
 impl OsIpcSender {
@@ -317,7 +295,7 @@ impl OsIpcSender {
                     },
                 ];
 
-                let msghdr = newMsghdr(
+                let msghdr = new_msghdr(
                     /* msg_name: */ptr::null_mut(),
                     /* msg_namelen: */0,
                     /* msg_iov: */iovec.as_mut_ptr(),
@@ -1038,7 +1016,7 @@ impl UnixCmsg {
         let cmsg_buffer = libc::malloc(cmsg_length) as *mut cmsghdr;
         UnixCmsg {
             cmsg_buffer: cmsg_buffer,
-            msghdr: newMsghdr (
+            msghdr: new_msghdr (
                 /* msg_name: */ptr::null_mut(),
                 /* msg_namelen: */0,
                 /* msg_iov: */iovec.as_mut_ptr(),
