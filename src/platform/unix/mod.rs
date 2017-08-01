@@ -43,10 +43,15 @@ const SCM_RIGHTS: c_int = 0x01;
 // Empirically, we have to deduct 32 bytes from that.
 const RESERVED_SIZE: usize = 32;
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(target_env = "musl")))]
 type IovLen = usize;
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(target_env = "musl")))]
 type MsgControlLen = size_t;
+
+#[cfg(all(target_os = "linux", target_env = "musl"))]
+type IovLen = i32;
+#[cfg(all(target_os = "linux", target_env = "musl"))]
+type MsgControlLen = socklen_t;
 
 #[cfg(target_os = "freebsd")]
 type IovLen = i32;
@@ -157,6 +162,46 @@ pub struct OsIpcSender {
     // (Rather, senders should just be cloned, as they are shared internally anyway --
     // another layer of sharing only adds unnecessary overhead...)
     nosync_marker: PhantomData<Cell<()>>,
+}
+
+#[cfg(not(all(target_os = "linux", target_env = "musl")))]
+fn newMsghdr(msg_name: *mut c_void,
+             msg_namelen: socklen_t,
+             msg_iov: *mut iovec,
+             msg_iovlen: IovLen,
+             msg_control: *mut c_void,
+             msg_controllen: MsgControlLen,
+             msg_flags: c_int) -> msghdr {
+    return msghdr {
+        msg_name: msg_name,
+        msg_namelen: msg_namelen,
+        msg_iov: msg_iov,
+        msg_iovlen: msg_iovlen,
+        msg_control: msg_control,
+        msg_controllen: msg_controllen,
+        msg_flags: msg_flags,
+    };
+}
+
+#[cfg(all(target_os = "linux", target_env = "musl"))]
+fn newMsghdr(msg_name: *mut c_void,
+             msg_namelen: socklen_t,
+             msg_iov: *mut iovec,
+             msg_iovlen: IovLen,
+             msg_control: *mut c_void,
+             msg_controllen: MsgControlLen,
+             msg_flags: c_int) -> msghdr {
+    return msghdr {
+        msg_name: msg_name,
+        msg_namelen: msg_namelen,
+        msg_iov: msg_iov,
+        msg_iovlen: msg_iovlen,
+        __pad1: 0 as i32,
+        msg_control: msg_control,
+        msg_controllen: msg_controllen,
+        __pad2: 0 as i32,
+        msg_flags: msg_flags,
+    };
 }
 
 impl OsIpcSender {
